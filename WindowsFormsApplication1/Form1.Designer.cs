@@ -65,7 +65,6 @@
             this.info_display.Size = new System.Drawing.Size(301, 40);
             this.info_display.TabIndex = 2;
             this.info_display.Text = "";
-            this.info_display.TextChanged += new System.EventHandler(this.info_display_TextChanged);
             // 
             // Form1
             // 

@@ -42,9 +42,10 @@
             this.start_btn.Name = "start_btn";
             this.start_btn.Size = new System.Drawing.Size(109, 44);
             this.start_btn.TabIndex = 0;
-            this.start_btn.Text = "Start";
+            this.start_btn.Text = "开始";
             this.start_btn.UseVisualStyleBackColor = true;
             this.start_btn.Click += new System.EventHandler(this.startbtn_Click);
+            this.start_btn.MinimumSize = new System.Drawing.Size(109, 44);
             // 
             // qrcode_img
             // 
@@ -53,6 +54,7 @@
             this.qrcode_img.Size = new System.Drawing.Size(301, 317);
             this.qrcode_img.TabIndex = 1;
             this.qrcode_img.TabStop = false;
+            this.MinimumSize = new System.Drawing.Size(301, 317);
             // 
             // eventLog1
             // 
@@ -62,18 +64,20 @@
             // 
             this.info_display.Location = new System.Drawing.Point(12, 386);
             this.info_display.Name = "info_display";
-            this.info_display.Size = new System.Drawing.Size(301, 40);
+            this.info_display.Size = new System.Drawing.Size(301, 65);
             this.info_display.TabIndex = 2;
-            this.info_display.Text = "";
+            this.info_display.Text = "点击开始按钮查找谁删除了你";
+            this.info_display.MinimumSize = new System.Drawing.Size(301, 65);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(333, 438);
+            this.ClientSize = new System.Drawing.Size(333, 463);
             this.Controls.Add(this.info_display);
             this.Controls.Add(this.qrcode_img);
             this.Controls.Add(this.start_btn);
+            this.MinimumSize = new System.Drawing.Size(333, 463);
             this.Name = "Form1";
             this.Text = "Who Deleted You?";
             ((System.ComponentModel.ISupportInitialize)(this.qrcode_img)).EndInit();

@@ -11,8 +11,6 @@ using System.IO;
 using System.Net;
 using System.Xml;
 using System.Web.Script.Serialization;
-using System.Collections;
-using System.Linq;
 
 namespace WindowsFormsApplication1
 {
@@ -38,17 +36,31 @@ namespace WindowsFormsApplication1
         {
             InitializeComponent();
             info_display.ReadOnly = true;
+            anchorControls(info_display);
+            qrcode_img.Anchor = AnchorStyles.Top;
+            start_btn.Anchor = AnchorStyles.Top;
+            this.MinimumSize = new System.Drawing.Size(333, 495);
+
             cookieContainer = new CookieContainer();
 #if (DEBUG)
-            pass_ticket = "qEOsxz2YgLm%2FxYHFE4nYLQck9aLFhMfLn%2Bd%2F6zeN3Q47NHu%2Fc3i3nLdPk3nlQErU";
-            skey = "@crypt_3ca759_44370b5c2fb4f06d53b6bad843aefd1d";
-            wxsid = "AcaXGkKgYVusu7b/";
+            pass_ticket = "6v2gj8oihiKV%2B%2FzFx31fc4zQ8ZB4aNvDfcfavgdseMo8EybRul8OscZylnts%2BKSZ";
+            skey = "@crypt_3ca759_e9b5bc9e6cfb79a07a9f49541a9d912f";
+            wxsid = "ZHu/WOz9i7GZXcFN";
             wxuin = "2622149902";
             base_url = "https://wx.qq.com/cgi-bin/mmwebwx-bin/";
             self = new Dictionary<string, dynamic>();
             //self.Add("UserName", "@b8a8bddd76a0b0e7c98225c86962de1a780a81b595ad18ae4383e647b3b8227f"); // Liao's
-            self.Add("UserName", "@7f745a02f3c4f0361103dd85f73d9e65d8591c4fb7d2ac6d4aba8c07382db8f8"); // me
+            self.Add("UserName", "@7b04f82ebadc2829a6b7c156bb44e411b79413f2861b5e682eb9bec55658f108"); // me
 #endif
+        }
+
+        private void anchorControls(Control control)
+        {
+            control.Anchor =
+                    AnchorStyles.Bottom |
+                    AnchorStyles.Right |
+                    AnchorStyles.Top |
+                    AnchorStyles.Left;
         }
 
         private void startbtn_Click(object sender, EventArgs e)
@@ -236,7 +248,10 @@ namespace WindowsFormsApplication1
             info_display.Invoke(new Action(() =>
             {
                 info_display.Location = new System.Drawing.Point(0, 0);
-                info_display.Size = new Size(333, 438);
+                info_display.Size = new Size(333, 463);
+                anchorControls(info_display);
+                info_display.Clear();
+                info_display.AppendText("正在扫描……" + Environment.NewLine);
             }));            
             var http = WebRequest.Create(redirect_url) as HttpWebRequest;
             http.CookieContainer = cookieContainer;
@@ -297,11 +312,11 @@ namespace WindowsFormsApplication1
 #if (DEBUG)
             Uri target = new Uri("https://wx.qq.com");
             cookieContainer.Add(new Cookie("mm_lang", "zh_CN") { Domain = target.Host });
-            cookieContainer.Add(new Cookie("webwx_data_ticket", "AQcxgRoS/+4kJjhWYZkp9B/K") { Domain = target.Host });
+            cookieContainer.Add(new Cookie("webwx_data_ticket", "AQcsqhDcQuYzt1F1QvsvBV9W") { Domain = target.Host });
             cookieContainer.Add(new Cookie("wxuin", "2622149902") { Domain = target.Host });
-            cookieContainer.Add(new Cookie("wxsid", "AcaXGkKgYVusu7b/") { Domain = target.Host });
-            cookieContainer.Add(new Cookie("wxloadtime", "1452586739") { Domain = target.Host });
-            cookieContainer.Add(new Cookie("webwxuvid", "0ae0eea9a9a07799bff91e2f6c7a80a648ed11392f720614e0ca1ce1c8c2248c0026864c65eb9e1fafadfeb6a8e66485") { Domain = target.Host });
+            cookieContainer.Add(new Cookie("wxsid", "ZHu/WOz9i7GZXcFN") { Domain = target.Host });
+            cookieContainer.Add(new Cookie("wxloadtime", "1452642551") { Domain = target.Host });
+            cookieContainer.Add(new Cookie("webwxuvid", "20e90937e5f3173d94c75ee2c3805a26a0da27cb6eb2a7f692f9b26c09eb4a2d68ac2e5055bac129bc2e653ddc9b3312") { Domain = target.Host });
 #endif
             http.CookieContainer = cookieContainer;
             http.ContentType = "application/json; charset=UTF-8";
@@ -390,20 +405,9 @@ namespace WindowsFormsApplication1
             return Tuple.Create(room_name, deleted_list, err_msg);
         }
 
-        private string unpack(string delimiter, List<string> ls)
+        private string unpack(string sep, List<string> ls)
         {
-            string rst = "";
-            for (int i = 0; i < ls.Count; i++)
-            {
-                if (i != ls.Count - 1)
-                {
-                    rst += rst + ls[i] + delimiter;
-                } else
-                {
-                    rst += rst + ls[i];
-                }              
-            }
-            return rst;
+            return string.Join(sep, ls);
         }
 
         private Boolean deleteMember(string room_name, List<string> deleted_list)
@@ -419,7 +423,7 @@ namespace WindowsFormsApplication1
             {
                 BaseRequest = base_req_param,
                 ChatRoomName = room_name,
-                DelMemberList = deleted_list //unpack(",", deleted_list)
+                DelMemberList = unpack(",", deleted_list)
             });
             Console.WriteLine(payload);
             var response = getPostResponse(http, payload);
@@ -433,7 +437,7 @@ namespace WindowsFormsApplication1
             return true;
         }
 
-        private List<String> addMember(string room_name, List<string> user_names)
+        private Tuple<List<String>, string> addMember(string room_name, List<string> user_names)
         {
             var url = base_url + String.Format("webwxupdatechatroom?fun=addmember&pass_ticket={0}", pass_ticket);
             var http = WebRequest.Create(url) as HttpWebRequest;
@@ -446,20 +450,14 @@ namespace WindowsFormsApplication1
             {
                 BaseRequest = base_req_param,
                 ChatRoomName = room_name,
-                AddMemberList = user_names //unpack(",", user_names)
+                AddMemberList = unpack(",", user_names)
             });
             Console.WriteLine(payload);
             var response = getPostResponse(http, payload);
             var dic = deserilizeJson(response);           
-            var member_list = new List<Dictionary<string, dynamic>>();
+            var member_list = new List<Dictionary<string, dynamic>>(dic["MemberList"].
+                                                           ToArray(typeof(Dictionary<string, dynamic>)));
             var deleted_list = new List<string>();
-
-            if ((int)dic["BaseResponse"]["Ret"] != 0)
-            {
-                //deleted_list.Add("@@@"); // denote an error
-                //return deleted_list;
-            }
-
             member_list.ForEach(memebr =>
             {
                 if ((int) memebr["MemberStatus"] == 4)
@@ -467,7 +465,7 @@ namespace WindowsFormsApplication1
                     deleted_list.Add(memebr["UserName"]);
                 }
             });         
-            return deleted_list;
+            return Tuple.Create(deleted_list, dic["BaseResponse"]["ErrMsg"]);
         }
 
         private string UTF8encode(string str)
@@ -497,33 +495,22 @@ namespace WindowsFormsApplication1
 #if (!DEBUG)
                 if (!getUUID())
                 {
-                    info_display.Invoke( new Action( () =>
-                    {
-                        info_display.AppendText(String.Format("获取uuid失败{0}", Environment.NewLine));
-                        info_display.ScrollToCaret();
-                    }));             
+                    updateUITextLine(info_display, "获取uuid失败", Environment.NewLine);             
                     return;
                 }
                 showQRImage();
                 while (waitForLogin() != "200") ;
+
                 if (!login())
                 {
-                    info_display.Invoke(new Action(() =>
-                  {
-                      info_display.AppendText(String.Format("登录失败{0}", Environment.NewLine));
-                      info_display.ScrollToCaret();
-                      return;
-                  }));
+                    updateUITextLine(info_display, "登录失败", Environment.NewLine);
+                    return;
                 }
 
                 if (!webwxinit())
                 {
-                    info_display.Invoke(new Action(() =>
-                    {
-                        info_display.AppendText(String.Format("初始化失败{0}", Environment.NewLine));
-                        info_display.ScrollToCaret();
-                        return;
-                    }));
+                    updateUITextLine(info_display, "初始化失败", Environment.NewLine);
+                    return;
                 }
 #endif
 
@@ -554,12 +541,7 @@ namespace WindowsFormsApplication1
                 }
                 
                 var member_count = member_list.Count;
-                info_display.Invoke(new Action(() => 
-                {
-                    info_display.AppendText(String.Format("通讯录共{0}位好友{1}", member_count, Environment.NewLine));
-                    info_display.ScrollToCaret();
-                }));
-
+                updateUITextLine(info_display, String.Format("通讯录共{0}位好友", member_count), Environment.NewLine);
                 var room_name = "";
                 List<string> result = new List<string>();
                 var d = new Dictionary<string, dynamic>();
@@ -568,11 +550,7 @@ namespace WindowsFormsApplication1
                     d[member["UserName"]] = Tuple.Create<string, string>((member["NickName"]),
                                             (member["RemarkName"]));
                 });
-                info_display.Invoke( new Action( ()=>
-                {
-                    info_display.AppendText(String.Format("开始查找...{0}", Environment.NewLine));
-                    info_display.ScrollToCaret();
-                }));
+                updateUITextLine(info_display, "开始查找...", Environment.NewLine);
                 var group_num = (int)Math.Ceiling(member_count / (float) MAX_GROUP_NUM);              
                 for (int i = 0; i < group_num; i++)
                 {
@@ -604,11 +582,13 @@ namespace WindowsFormsApplication1
                     }
                     else
                     {
-                        deleted_list = addMember(room_name, usernames);
-                        if(deleted_list[deleted_list.Count - 1].Contains("@@@"))
+                        var tuple = addMember(room_name, usernames);
+                        deleted_list = tuple.Item1;
+                        var err_msg = tuple.Item2;
+                        if (err_msg.Equals("Too many attempts. Try again later."))
                         {
-                            //updateUITextLine(info_display, "操作过于频繁，请稍后再试", Environment.NewLine);
-                            //return;
+                            updateUITextLine(info_display, "操作过于频繁，请稍后再试", Environment.NewLine);
+                            return;  
                         }
                     }
 
@@ -619,8 +599,8 @@ namespace WindowsFormsApplication1
 
                     if(!deleteMember(room_name, usernames))
                     {
-                        //updateUITextLine(info_display, "操作过于频繁，请稍后再试", Environment.NewLine);
-                        //return;
+                        updateUITextLine(info_display, "操作过于频繁，请稍后再试", Environment.NewLine);
+                        return;
                     }
                     updateUITextLine(info_display, String.Format("新发现你被{0}人删除：" + Environment.NewLine,
                                         deleted_list.Count), Environment.NewLine);
@@ -666,26 +646,26 @@ namespace WindowsFormsApplication1
                 );
                 if (result_names.Count > 0)
                 {
+                    int i = 0;
                     result_names.ForEach(name => 
-                    {
-                        for (int i = 0; i < COL_NUM; i++)
+                    {       
+                        if (i != COL_NUM - 1)
                         {
-                            if (i != COL_NUM - 1)
-                            {
-                                updateUITextLine(info_display, name, " ,");
-                            }
-                            else
-                            {
-                                updateUITextLine(info_display, name, Environment.NewLine);
-                            }
+                            updateUITextLine(info_display, name, " ,");
                         }
+                        else
+                        {
+                            updateUITextLine(info_display, name, Environment.NewLine);
+                            i = 0;
+                        }
+                        i++;                        
                     } ); 
                 } else
                 {
                     updateUITextLine(info_display, "无", Environment.NewLine);
                 }
             }
-            updateUITextLine(info_display, "--------------------------------------", "");
+            updateUITextLine(info_display, Environment.NewLine + "--------------------------------------", "");
         }
 
         private void bw_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -700,9 +680,11 @@ namespace WindowsFormsApplication1
             bw.WorkerReportsProgress = true;
             bw.DoWork += new DoWorkEventHandler(bw_DoWork);
             bw.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bw_RunWorkerCompleted);
-            info_display.AppendText("正在发送请求……" + Environment.NewLine);
+            info_display.AppendText(Environment.NewLine + "正在发送请求……" + Environment.NewLine);
             info_display.ScrollToCaret();
             bw.RunWorkerAsync();
         }
+
+
     }
 }

@@ -39,6 +39,7 @@ namespace WindowsFormsApplication1
             anchorControls(info_display);
             qrcode_img.Anchor = AnchorStyles.Top;
             start_btn.Anchor = AnchorStyles.Top;
+            linkLabel1.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             this.MinimumSize = new System.Drawing.Size(333, 495);
 
             cookieContainer = new CookieContainer();
@@ -149,11 +150,8 @@ namespace WindowsFormsApplication1
             tip = 1;
             WebRequest request = WebRequest.Create(url);
             request.Method = "GET";
-            info_display.Invoke(new Action(() =>
-            {
-                info_display.AppendText(String.Format("正在读取二维码，请稍等……{0}", Environment.NewLine));
-                info_display.ScrollToCaret();
-            }));
+
+            updateUITextLine(info_display, "正在读取二维码，请稍等……", Environment.NewLine, Color.Black);
             using (WebResponse response = request.GetResponse())
             {
                 using (Stream stream = response.GetResponseStream())
@@ -171,12 +169,8 @@ namespace WindowsFormsApplication1
                         this.Controls.Remove(start_btn);
                         start_btn.Dispose();
                     }));
-                                  
-                    info_display.Invoke(new Action( ()=>
-                    {
-                        info_display.AppendText(String.Format("请使用微信扫描二维码以登录{0}", Environment.NewLine));
-                        info_display.ScrollToCaret();
-                    }));                   
+
+                    updateUITextLine(info_display, "请使用微信扫描二维码以登录", Environment.NewLine, Color.Black);                 
                 }
             }
         }
@@ -203,21 +197,12 @@ namespace WindowsFormsApplication1
             
             if(code == "201")
             {
-                info_display.Invoke(new Action(() =>
-                {
-                    info_display.AppendText(String.Format("扫描成功,请在手机上点击确认以登录{0}", Environment.NewLine));
-                    info_display.ScrollToCaret();
-                }
-                ));
+                updateUITextLine(info_display, "扫描成功,请在手机上点击确认以登录", Environment.NewLine, Color.Black);
                 tip = 0;
             } else if(code == "200")
             {
-                info_display.Invoke(new Action( () =>
-                {
-                    info_display.AppendText(String.Format("正在登录...{0}", Environment.NewLine));
-                    info_display.ScrollToCaret();
-                }
-                ));
+
+                updateUITextLine(info_display, "正在登录", Environment.NewLine, Color.Black);
                 regex = @"window.redirect_uri=""(\S+?)"";";
                 r = new Regex(regex, RegexOptions.None);
                 m = r.Match(text);
@@ -296,7 +281,7 @@ namespace WindowsFormsApplication1
             var ErrMsg = dic["BaseResponse"]["ErrMsg"];
             if (ErrMsg.Length > 0)
             {
-                updateUITextLine(info_display, ErrMsg, Environment.NewLine);
+                updateUITextLine(info_display, ErrMsg, Environment.NewLine, Color.Red);
             }
             if( dic["BaseResponse"]["Ret"] != 0)
             {
@@ -367,7 +352,7 @@ namespace WindowsFormsApplication1
 
         }
 
-        private Tuple<string, List<string>, string> createChatRoom(List<string> user_names)
+        private Tuple<string, List<string>, List<string>, string> createChatRoom(List<string> user_names)
         {
             var member_list = new List<Dictionary<string, dynamic>>();
             user_names.ForEach(username => 
@@ -393,16 +378,21 @@ namespace WindowsFormsApplication1
             member_list = new List<Dictionary<string, dynamic>>(dic["MemberList"].
                                                            ToArray(typeof(Dictionary<string, dynamic>)));
             var deleted_list = new List<string>();
+            var blocked_list = new List<string>();
             member_list.ForEach(member =>
             {
                 if ((int) member["MemberStatus"] == 4)
                 {
                     deleted_list.Add(member["UserName"]);
                 }
+                else if ((int) member["MemberStatus"] == 3)
+                {
+                    blocked_list.Add(member["UserName"]);
+                }
             });
 
             string err_msg = dic["BaseResponse"]["ErrMsg"];
-            return Tuple.Create(room_name, deleted_list, err_msg);
+            return Tuple.Create(room_name, deleted_list, blocked_list,err_msg);
         }
 
         private string unpack(string sep, List<string> ls)
@@ -437,7 +427,7 @@ namespace WindowsFormsApplication1
             return true;
         }
 
-        private Tuple<List<String>, string> addMember(string room_name, List<string> user_names)
+        private Tuple<List<String>, List<string>, string> addMember(string room_name, List<string> user_names)
         {
             var url = base_url + String.Format("webwxupdatechatroom?fun=addmember&pass_ticket={0}", pass_ticket);
             var http = WebRequest.Create(url) as HttpWebRequest;
@@ -458,14 +448,19 @@ namespace WindowsFormsApplication1
             var member_list = new List<Dictionary<string, dynamic>>(dic["MemberList"].
                                                            ToArray(typeof(Dictionary<string, dynamic>)));
             var deleted_list = new List<string>();
-            member_list.ForEach(memebr =>
+            var blocked_list = new List<string>();
+            member_list.ForEach(member =>
             {
-                if ((int) memebr["MemberStatus"] == 4)
+                if ((int) member["MemberStatus"] == 4)
                 {
-                    deleted_list.Add(memebr["UserName"]);
+                    deleted_list.Add(member["UserName"]);
+                }
+                else if ((int) member["MemberStatus"] == 3)
+                {
+                    blocked_list.Add(member["UserName"]);
                 }
             });         
-            return Tuple.Create(deleted_list, dic["BaseResponse"]["ErrMsg"]);
+            return Tuple.Create(deleted_list, blocked_list, dic["BaseResponse"]["ErrMsg"]);
         }
 
         private string UTF8encode(string str)
@@ -474,13 +469,78 @@ namespace WindowsFormsApplication1
             return Encoding.UTF8.GetString(bytes);
         }
 
-        private void updateUITextLine(RichTextBox control, string text, string end)
+        private void updateUITextLine(RichTextBox control, string text, string end, Color color)
         {
             control.Invoke(new Action(() =>
             {
+                control.SelectionColor = color;
                 control.AppendText(text + end);
                 control.ScrollToCaret();
             }));
+        }
+
+        private void conclude(List<string> result, string msg, Dictionary<string, dynamic> d)
+        {
+            
+            var result_names = new List<string>();
+            result.ForEach(r =>
+            {
+                if (!String.IsNullOrEmpty(d[r].Item2))
+                {
+                    result_names.Add(d[r].Item2);
+                }
+                else
+                {
+                    result_names.Add(d[r].Item1);
+                }
+            });
+
+            updateUITextLine(info_display, String.Format(msg + "(共{0}人):", result.Count), Environment.NewLine, Color.Black);
+            string pattern = "<span.+/span>";
+            string replacement = "";
+            Regex rgx = new Regex(pattern);
+            result_names.ForEach(name =>
+                rgx.Replace(name, replacement)
+            );
+            if (result_names.Count > 0)
+            {
+                int i = 0;
+                result_names.ForEach(name =>
+                {
+                    if (i != COL_NUM - 1 && i != result_names.Count - 1)
+                    {
+                        updateUITextLine(info_display, name, " ,", Color.Red);
+                    }
+                    else
+                    {
+                        updateUITextLine(info_display, name, Environment.NewLine, Color.Red);
+                        i = 0;
+                    }
+                    i++;
+                });
+            }
+            else
+            {
+                updateUITextLine(info_display, "无", Environment.NewLine, Color.Black);
+            }
+            updateUITextLine(info_display, "--------------------------------------", Environment.NewLine, Color.Black);
+        }
+
+        private void result_update(List<string> deleted_list, Dictionary<string, dynamic> d, string msg)
+        {
+            updateUITextLine(info_display, String.Format("新发现你被{0}人{1}：" + Environment.NewLine,
+                                        deleted_list.Count, msg), Environment.NewLine, Color.Black);
+            for (int k = 0; k < deleted_list.Count; k++)
+            {
+                if (!String.IsNullOrEmpty(d[deleted_list[k]].Item2))
+                {
+                    updateUITextLine(info_display, String.Format("{0}", d[deleted_list[k]].Item2), Environment.NewLine, Color.Red);
+                }
+                else
+                {
+                    updateUITextLine(info_display, String.Format("{0}", d[deleted_list[k]].Item1), Environment.NewLine, Color.Red);
+                }
+            }
         }
 
         private void bw_DoWork(object sender, DoWorkEventArgs e)
@@ -495,7 +555,7 @@ namespace WindowsFormsApplication1
 #if (!DEBUG)
                 if (!getUUID())
                 {
-                    updateUITextLine(info_display, "获取uuid失败", Environment.NewLine);             
+                    updateUITextLine(info_display, "获取uuid失败", Environment.NewLine, Color.Red);             
                     return;
                 }
                 showQRImage();
@@ -503,13 +563,13 @@ namespace WindowsFormsApplication1
 
                 if (!login())
                 {
-                    updateUITextLine(info_display, "登录失败", Environment.NewLine);
+                    updateUITextLine(info_display, "登录失败", Environment.NewLine, Color.Red);
                     return;
                 }
 
                 if (!webwxinit())
                 {
-                    updateUITextLine(info_display, "初始化失败", Environment.NewLine);
+                    updateUITextLine(info_display, "初始化失败", Environment.NewLine, Color.Red);
                     return;
                 }
 #endif
@@ -533,6 +593,11 @@ namespace WindowsFormsApplication1
                 }));
 #endif
                 var member_list = webwxgetcontact();
+                if(member_list.Count == 0)
+                {
+                    updateUITextLine(info_display, "好友列表为空", Environment.NewLine, Color.Red);
+                    return;
+                }
 
                 Console.WriteLine("member_list: ");
                 foreach(var member in member_list)
@@ -541,17 +606,19 @@ namespace WindowsFormsApplication1
                 }
                 
                 var member_count = member_list.Count;
-                updateUITextLine(info_display, String.Format("通讯录共{0}位好友", member_count), Environment.NewLine);
+                updateUITextLine(info_display, String.Format("通讯录共{0}位好友", member_count), Environment.NewLine, Color.Black);
                 var room_name = "";
                 List<string> result = new List<string>();
+                List<string> rst_blk = new List<string>();
                 var d = new Dictionary<string, dynamic>();
                 member_list.ForEach(member =>
                 {
                     d[member["UserName"]] = Tuple.Create<string, string>((member["NickName"]),
                                             (member["RemarkName"]));
                 });
-                updateUITextLine(info_display, "开始查找...", Environment.NewLine);
-                var group_num = (int)Math.Ceiling(member_count / (float) MAX_GROUP_NUM);              
+                updateUITextLine(info_display, "开始查找...", Environment.NewLine, Color.Black);
+                var group_num = (int)Math.Ceiling(member_count / (float) MAX_GROUP_NUM);
+                Console.WriteLine("***************** group number: " + group_num);
                 for (int i = 0; i < group_num; i++)
                 {
                     var usernames = new List<string>();
@@ -565,29 +632,34 @@ namespace WindowsFormsApplication1
                         usernames.Add(member["UserName"]);
                     }
                     List<string> deleted_list;
+                    List<string> blocked_list;
                     if (String.IsNullOrEmpty(room_name))
                     {
                         var tuple = createChatRoom(usernames);
                         room_name = tuple.Item1;
                         if (String.IsNullOrEmpty(room_name))
                         {
-                            if (tuple.Item3.Equals("Too many attempts. Try again later."))
+                            if (tuple.Item4.Equals("Too many attempts. Try again later."))
                             {
-                                updateUITextLine(info_display, "操作过于频繁，请稍后再试", Environment.NewLine);
+                                updateUITextLine(info_display, "操作过于频繁，请稍后再试", Environment.NewLine, Color.Red);
                                 return;
+                            } else
+                            {
+                                Console.WriteLine("***** no chatroom created");
                             }
                         }
-                        Console.WriteLine("room name: " + room_name);
                         deleted_list = tuple.Item2;
+                        blocked_list = tuple.Item3;
                     }
                     else
                     {
                         var tuple = addMember(room_name, usernames);
                         deleted_list = tuple.Item1;
-                        var err_msg = tuple.Item2;
+                        blocked_list = tuple.Item2;
+                        var err_msg = tuple.Item3;
                         if (err_msg.Equals("Too many attempts. Try again later."))
                         {
-                            updateUITextLine(info_display, "操作过于频繁，请稍后再试", Environment.NewLine);
+                            updateUITextLine(info_display, "操作过于频繁，请稍后再试", Environment.NewLine, Color.Red);
                             return;  
                         }
                     }
@@ -596,76 +668,33 @@ namespace WindowsFormsApplication1
                     {
                         result.AddRange(deleted_list);
                     }
-
-                    if(!deleteMember(room_name, usernames))
+                    if (blocked_list.Count > 0)
                     {
-                        updateUITextLine(info_display, "操作过于频繁，请稍后再试", Environment.NewLine);
+                        rst_blk.AddRange(blocked_list);
+                    }
+                    if (string.IsNullOrEmpty(room_name))
+                    {
+                        // TO_DO: if failed to create the chatroom 
+                    }
+                    if(!String.IsNullOrEmpty(room_name) && !deleteMember(room_name, usernames))
+                    {
+                        updateUITextLine(info_display, "操作过于频繁，请稍后再试", Environment.NewLine, Color.Red);
                         return;
                     }
-                    updateUITextLine(info_display, String.Format("新发现你被{0}人删除：" + Environment.NewLine,
-                                        deleted_list.Count), Environment.NewLine);
-                    int k = 0;
-                    for (k = 0; k < deleted_list.Count; k++)
+                    result_update(deleted_list, d, "删除");
+                    result_update(blocked_list, d, "拉黑");
+                    
+                    if (i != group_num - 1)
                     {
-                        if (!String.IsNullOrEmpty(d[deleted_list[k]].Item2))
-                        {
-                            updateUITextLine(info_display, String.Format("{0}", d[deleted_list[k]].Item2), Environment.NewLine);
-                        }
-                        else
-                        {
-                            updateUITextLine(info_display, String.Format("{0}", d[deleted_list[k]].Item1), Environment.NewLine);
-                        }
-                    }
-                    if (k != group_num - 1)
-                    {
-                        updateUITextLine(info_display, "", Environment.NewLine);
-                        updateUITextLine(info_display, "正在继续查找,请耐心等待...", Environment.NewLine);
-                        System.Threading.Thread.Sleep(16000);
+                        updateUITextLine(info_display, "", Environment.NewLine, Color.Black);
+                        updateUITextLine(info_display, "30秒后继续查找,请耐心等待...", Environment.NewLine, Color.Black);
+                        System.Threading.Thread.Sleep(30000); // 30s interval
                     }
                 }
-                updateUITextLine(info_display, Environment.NewLine + "结果汇总完毕,20s后可重试...", Environment.NewLine);
-                var result_names = new List<string>();
-                result.ForEach(r =>
-                {
-                    if (!String.IsNullOrEmpty(d[r].Item2))
-                    {
-                        result_names.Add(d[r].Item2);
-                    }
-                    else
-                    {
-                        result_names.Add(d[r].Item1);
-                    }
-                });
-
-                updateUITextLine(info_display, String.Format("被删除的好友列表(共{0}人):", result.Count), Environment.NewLine);
-                string pattern = "<span.+/span>";
-                string replacement = "";
-                Regex rgx = new Regex(pattern);
-                result_names.ForEach(name =>             
-                    rgx.Replace(name, replacement)
-                );
-                if (result_names.Count > 0)
-                {
-                    int i = 0;
-                    result_names.ForEach(name => 
-                    {       
-                        if (i != COL_NUM - 1)
-                        {
-                            updateUITextLine(info_display, name, " ,");
-                        }
-                        else
-                        {
-                            updateUITextLine(info_display, name, Environment.NewLine);
-                            i = 0;
-                        }
-                        i++;                        
-                    } ); 
-                } else
-                {
-                    updateUITextLine(info_display, "无", Environment.NewLine);
-                }
-            }
-            updateUITextLine(info_display, Environment.NewLine + "--------------------------------------", "");
+                updateUITextLine(info_display, Environment.NewLine + "结果汇总完毕,30s后可重试...", Environment.NewLine, Color.Black);
+                conclude(result, "以下联系人已将你删除", d);
+                conclude(rst_blk, "以下联系人已将你拉黑", d);
+            }          
         }
 
         private void bw_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -685,6 +714,11 @@ namespace WindowsFormsApplication1
             bw.RunWorkerAsync();
         }
 
-
+        private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            linkLabel1.LinkVisited = true;
+            // Navigate to a URL.
+            System.Diagnostics.Process.Start("http://blog.yongfengzhang.com");
+        }
     }
 }

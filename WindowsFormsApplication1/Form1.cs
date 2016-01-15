@@ -718,7 +718,7 @@ namespace WindowsFormsApplication1
         {
             linkLabel1.LinkVisited = true;
             // Navigate to a URL.
-            System.Diagnostics.Process.Start("http://blog.yongfengzhang.com");
+            System.Diagnostics.Process.Start("https://github.com/freedombird9/wechat-deletion-check");
         }
     }
 }

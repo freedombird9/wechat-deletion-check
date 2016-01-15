@@ -40,6 +40,7 @@ namespace WindowsFormsApplication1
             qrcode_img.Anchor = AnchorStyles.Top;
             start_btn.Anchor = AnchorStyles.Top;
             linkLabel1.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            linkLabel2.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             this.MinimumSize = new System.Drawing.Size(333, 495);
 
             cookieContainer = new CookieContainer();
@@ -233,7 +234,7 @@ namespace WindowsFormsApplication1
             info_display.Invoke(new Action(() =>
             {
                 info_display.Location = new System.Drawing.Point(0, 0);
-                info_display.Size = new Size(333, 463);
+                info_display.Size = new Size(333, 455);
                 anchorControls(info_display);
                 info_display.Clear();
                 info_display.AppendText("正在扫描……" + Environment.NewLine);
@@ -719,6 +720,13 @@ namespace WindowsFormsApplication1
             linkLabel1.LinkVisited = true;
             // Navigate to a URL.
             System.Diagnostics.Process.Start("https://github.com/freedombird9/wechat-deletion-check");
+        }
+
+        private void linkLabel2_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            linkLabel2.LinkVisited = true;
+            // Navigate to a URL.
+            System.Diagnostics.Process.Start("https://chrome.google.com/webstore/detail/bdfbkchemknlpmmopkncahjdmocnambd/");
         }
     }
 }

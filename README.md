@@ -33,4 +33,7 @@
 3. Chrome插件版：
 https://chrome.google.com/webstore/detail/bdfbkchemknlpmmopkncahjdmocnambd/
 
+4. 我的博客：
+http://blog.yongfengzhang.com
+
 

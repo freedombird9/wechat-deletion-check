@@ -7,7 +7,7 @@
 
 ### 使用方法
 
-1.在 https://github.com/freedombird9/wechat-deletion-check/releases 中点击WeChatHelper.exe进行下载，下载之后可以直接运行。如果被SmartScreen警告为有安全威胁，是因为开发仓促，对微软新的签名机制没有来得及做详细了解，故使用的证书可能不被SmartScreen认可。但是软件绝对没有病毒，请放心使用。我会尽快在后续开发中解决这个问题。
+1. 在 https://github.com/freedombird9/wechat-deletion-check/releases 中点击WeChatHelper.exe进行下载，下载之后可以直接运行。如果被SmartScreen警告为有安全威胁，是因为开发仓促，对微软新的签名机制没有来得及做详细了解，故使用的证书可能不被SmartScreen认可。但是软件绝对没有病毒，请放心使用。我会尽快在后续开发中解决这个问题。
 
 2. 进入程序后，点击开始按钮，然后请跟随程序指示操作。如果好友过多，后续的请求可能会被微信block掉，程序会显示操作过于频繁，请稍后再试。会在后续版本中处理此问题。
 
